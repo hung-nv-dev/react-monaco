@@ -1,14 +1,13 @@
 export { SOCQueryEditor } from './SOCQueryEditor';
 export type {
   SOCQueryEditorProps,
-  SOCQueryEditorRef,
   EditorMode,
   SavedQuery,
   TimeRange,
   SOCEditorOptions,
   DataSource,
   HistogramDataPoint,
-} from './SOCQueryEditor.types';
+} from './types';
 
 // Components
 export { EditorToolbar } from './components/EditorToolbar';

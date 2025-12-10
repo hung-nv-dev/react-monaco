@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Modal, Form, Input, Select, message, Radio, DatePicker, Space } from 'antd';
-import type { SavedQuery, TimeRange } from '../SOCQueryEditor.types';
+import type { SavedQuery, TimeRange } from '../types';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;

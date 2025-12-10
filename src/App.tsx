@@ -1,9 +1,6 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Button, Card, Space } from "antd";
-import {
-  SOCQueryEditor,
-  type SOCQueryEditorRef,
-} from "./components/soc-query-editor";
+import { SOCQueryEditor } from "./components/soc-query-editor";
 import "./App.css";
 
 const SOC_EXAMPLE_QUERIES = [
@@ -51,17 +48,14 @@ WHERE EventID = 4625
 
 function App() {
   const [query, setQuery] = useState("");
-  const editorRef = useRef<SOCQueryEditorRef>(null);
 
   const loadExample = (exampleQuery: string) => {
     setQuery(exampleQuery);
-    editorRef.current?.setValue(exampleQuery);
   };
 
   return (
     <div style={{ padding: "16px", maxWidth: "100%" }}>
       <SOCQueryEditor
-        ref={editorRef}
         value={query}
         onChange={setQuery}
         showToolbar={false}

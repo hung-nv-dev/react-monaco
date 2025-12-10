@@ -1,4 +1,4 @@
-import type { ValidationError } from './lib/socql';
+import type { ValidationError } from '../lib/socql';
 
 export type EditorMode = 'compact' | 'expanded' | 'auto';
 export type DataSource = 'siem' | 'edr' | 'both';

@@ -10,7 +10,7 @@ import {
   StopOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
-import type { DataSource, SavedQuery } from '../SOCQueryEditor.types';
+import type { DataSource, SavedQuery } from '../types';
 
 export interface EditorToolbarProps {
   onSearch?: () => void;

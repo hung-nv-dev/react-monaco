@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { SavedQuery } from '../SOCQueryEditor.types';
+import type { SavedQuery } from '../types';
 
 const DEFAULT_STORAGE_KEY = 'socql-saved-queries';
 const HISTORY_KEY = 'socql-query-history';

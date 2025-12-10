@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Empty, Typography } from 'antd';
-import type { HistogramDataPoint, TimeRange } from '../SOCQueryEditor.types';
+import type { HistogramDataPoint, TimeRange } from '../types';
 
 const { Text } = Typography;
 
