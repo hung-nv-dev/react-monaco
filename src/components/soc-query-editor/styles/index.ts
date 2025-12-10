@@ -37,46 +37,24 @@ export const EditorWrapper = styled.div<{ $disabled?: boolean }>`
     `}
 `;
 
-export const EditorContainer = styled.div<{ $expanded?: boolean }>`
+export const EditorContainer = styled.div`
   position: relative;
-  flex: 0 0 auto;
-  height: 40px;
-  min-height: 40px;
+  flex: 1 1 auto;
+  min-height: 100px;
   z-index: 1;
-  overflow: visible;
+  overflow: hidden;
   box-sizing: border-box;
-
-  ${({ $expanded }) =>
-    $expanded &&
-    css`
-      z-index: 1000;
-    `}
 `;
 
-export const MonacoWrapper = styled.div<{ $expanded?: boolean; $height: number }>`
+export const MonacoWrapper = styled.div`
   width: 100%;
-  min-height: 40px;
+  height: 100%;
+  min-height: 100px;
   position: relative;
   z-index: 1;
-  overflow: visible !important;
-  contain: none !important;
+  overflow: hidden;
   box-sizing: border-box;
   background: #fff;
-  height: ${({ $height }) => $height}px;
-  transition: height 0.2s ease;
-
-  ${({ $expanded }) =>
-    $expanded &&
-    css`
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      z-index: 1000;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      border-radius: 0 0 6px 6px;
-      max-height: 600px;
-    `}
 `;
 
 export const LoadingOverlay = styled.div`
@@ -294,19 +272,8 @@ export const SearchProgressText = styled.span`
   white-space: nowrap;
 `;
 
-// Global styles for Monaco editor - these need to be in a createGlobalStyle
+// Global styles for Monaco editor
 export const MonacoGlobalStyles = css`
-  .monaco-editor {
-    padding-top: 4px;
-    overflow: visible !important;
-    contain: none !important;
-  }
-
-  .monaco-editor .monaco-editor-background,
-  .monaco-editor .monaco-scrollable-element {
-    overflow: visible !important;
-  }
-
   .monaco-editor .margin {
     background: transparent !important;
   }
@@ -318,65 +285,5 @@ export const MonacoGlobalStyles = css`
   .monaco-editor .view-line .placeholder-text {
     color: #bfbfbf;
     font-style: italic;
-  }
-
-  .monaco-editor .suggest-widget,
-  .editor-widget.suggest-widget,
-  .monaco-editor .editor-widget.suggest-widget {
-    z-index: 2147483647 !important;
-    position: fixed !important;
-    overflow: auto !important;
-    contain: none !important;
-    pointer-events: auto !important;
-    max-height: 300px !important;
-  }
-
-  .monaco-editor .monaco-editor-overlaymessage {
-    z-index: 2147483646 !important;
-  }
-
-  .monaco-editor .parameter-hints-widget {
-    z-index: 2147483645 !important;
-  }
-
-  .monaco-editor .context-view {
-    z-index: 2147483644 !important;
-  }
-
-  .monaco-editor .monaco-editor-overlay {
-    z-index: 2147483640 !important;
-  }
-
-  .monaco-suggest-widget {
-    z-index: 2147483647 !important;
-  }
-
-  .monaco-editor .monaco-editor-overlaywidgets {
-    z-index: 2147483640 !important;
-  }
-
-  .monaco-editor .suggest-widget-container {
-    z-index: 2147483647 !important;
-  }
-
-  body > .monaco-editor,
-  body > .monaco-aria-container,
-  body > .monaco-editor-overlaymessage,
-  body > .suggest-widget,
-  body > .editor-widget,
-  body > .monaco-hover,
-  body > .parameter-hints-widget {
-    z-index: 2147483647 !important;
-  }
-
-  .overflow-guard,
-  .monaco-editor .overflow-guard {
-    overflow: visible !important;
-  }
-
-  .monaco-editor .overlayWidgets,
-  .monaco-editor .contentWidgets {
-    z-index: 2147483640 !important;
-    overflow: visible !important;
   }
 `;

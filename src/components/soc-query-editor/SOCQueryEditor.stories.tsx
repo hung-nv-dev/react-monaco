@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { SOCQueryEditor } from './SOCQueryEditor';
-import type { SOCQueryEditorProps, SavedQuery, HistogramDataPoint, DataSource } from './types';
+import type { SOCQueryEditorProps, SavedQuery, DataSource } from './types';
 
 const meta: Meta<typeof SOCQueryEditor> = {
   title: 'Components/SOCQueryEditor',
@@ -38,10 +38,6 @@ const meta: Meta<typeof SOCQueryEditor> = {
       control: 'boolean',
       description: 'Show quick insert buttons',
     },
-    showHistogram: {
-      control: 'boolean',
-      description: 'Show event histogram',
-    },
     disabled: {
       control: 'boolean',
       description: 'Disable the editor',
@@ -72,13 +68,10 @@ const meta: Meta<typeof SOCQueryEditor> = {
 export default meta;
 type Story = StoryObj<typeof SOCQueryEditor>;
 
-// Default story
+// Default story - minimal editor
 export const Default: Story = {
   args: {
     placeholder: 'Enter your SOCQL query...',
-    showToolbar: true,
-    showErrorPanel: true,
-    showQuickInsert: true,
     theme: 'socql-light',
   },
 };
@@ -87,8 +80,6 @@ export const Default: Story = {
 export const WithDefaultValue: Story = {
   args: {
     defaultValue: 'source_ip = "192.168.1.1" AND event_type = "login"',
-    showToolbar: true,
-    showErrorPanel: true,
   },
 };
 
@@ -97,10 +88,19 @@ export const DarkTheme: Story = {
   args: {
     theme: 'socql-dark',
     defaultValue: 'destination_port IN (80, 443, 8080) | stats count by source_ip',
-    showToolbar: true,
   },
   parameters: {
     backgrounds: { default: 'dark' },
+  },
+};
+
+// With toolbar and panels
+export const WithToolbar: Story = {
+  args: {
+    defaultValue: 'source_ip = "192.168.1.1"',
+    showToolbar: true,
+    showErrorPanel: true,
+    showQuickInsert: true,
   },
 };
 
@@ -108,7 +108,6 @@ export const DarkTheme: Story = {
 export const WithValidationErrors: Story = {
   args: {
     defaultValue: 'invalid_field == "test" AND',
-    showToolbar: true,
     showErrorPanel: true,
     validateOnChange: true,
   },
@@ -173,29 +172,6 @@ export const WithSearch: Story = {
   },
 };
 
-// With histogram
-const generateHistogramData = (): HistogramDataPoint[] => {
-  const now = Date.now();
-  return Array.from({ length: 24 }, (_, i) => ({
-    timestamp: now - (23 - i) * 3600000,
-    count: Math.floor(Math.random() * 1000) + 100,
-    label: `${i}:00`,
-  }));
-};
-
-export const WithHistogram: Story = {
-  args: {
-    defaultValue: 'source_ip = "192.168.1.0/24" | stats count by hour',
-    showToolbar: true,
-    showHistogram: true,
-    histogramData: generateHistogramData(),
-    histogramTimeRange: {
-      type: 'relative',
-      relativeValue: '24h',
-    },
-  },
-};
-
 // With saved queries
 const savedQueriesExample: SavedQuery[] = [
   {
@@ -242,7 +218,6 @@ export const Disabled: Story = {
   args: {
     defaultValue: 'source_ip = "192.168.1.1"',
     disabled: true,
-    showToolbar: true,
   },
 };
 
@@ -251,7 +226,6 @@ export const ReadOnly: Story = {
   args: {
     defaultValue: 'source_ip = "192.168.1.1" AND event_type = "login"',
     readOnly: true,
-    showToolbar: true,
   },
 };
 
@@ -259,7 +233,6 @@ export const ReadOnly: Story = {
 export const Loading: Story = {
   args: {
     loading: true,
-    showToolbar: true,
   },
 };
 
@@ -270,16 +243,6 @@ export const SearchingWithProgress: Story = {
     isSearching: true,
     searchProgress: 65,
     showToolbar: true,
-  },
-};
-
-// Minimal - no toolbar, no quick insert
-export const Minimal: Story = {
-  args: {
-    defaultValue: 'source_ip = "10.0.0.1"',
-    showToolbar: false,
-    showQuickInsert: false,
-    showErrorPanel: false,
   },
 };
 
@@ -297,7 +260,6 @@ export const WithDataSource: Story = {
 export const CustomStyling: Story = {
   args: {
     defaultValue: 'source_ip = "192.168.1.1"',
-    showToolbar: true,
     className: 'custom-editor',
     style: {
       border: '2px solid #1890ff',
@@ -338,7 +300,6 @@ const FullFeaturedTemplate = (args: SOCQueryEditorProps) => {
       searchProgress={progress}
       onCancel={() => setIsSearching(false)}
       savedQueries={savedQueriesExample}
-      histogramData={generateHistogramData()}
       onSave={(query: SavedQuery) => console.log('Saved:', query)}
       onLoad={(query: SavedQuery) => setValue(query.query)}
     />
@@ -351,7 +312,6 @@ export const FullFeatured: Story = {
     showToolbar: true,
     showErrorPanel: true,
     showQuickInsert: true,
-    showHistogram: true,
     enableLocalStorage: true,
     dataSource: 'both',
     onDataSourceChange: (ds: DataSource) => console.log('Data source:', ds),

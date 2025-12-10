@@ -7,7 +7,12 @@
       "Bash(npm run build:*)",
       "Bash(cat:*)",
       "Bash(tree:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(npx storybook@latest init:*)",
+      "Bash(rm:*)",
+      "Bash(npm run build:lib:*)",
+      "Bash(npm run build:types:*)",
+      "Bash(npm run build-storybook:*)"
     ],
     "deny": [],
     "ask": []

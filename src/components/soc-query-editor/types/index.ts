@@ -3,12 +3,6 @@ import type { ValidationError } from '../lib/socql';
 export type EditorMode = 'compact' | 'expanded' | 'auto';
 export type DataSource = 'siem' | 'edr' | 'both';
 
-export interface HistogramDataPoint {
-  timestamp: number;
-  count: number;
-  label?: string;
-}
-
 export interface TimeRange {
   type: 'relative' | 'absolute';
   relativeValue?: string;
@@ -48,9 +42,6 @@ export interface SOCQueryEditorProps {
   onCancel?: () => void;
   /** Search progress percentage (0-100). If undefined, shows indeterminate progress when isSearching is true. */
   searchProgress?: number;
-  showHistogram?: boolean;
-  histogramData?: HistogramDataPoint[];
-  histogramTimeRange?: TimeRange;
   validateOnChange?: boolean;
   validationDebounce?: number;
   height?: string | number;
