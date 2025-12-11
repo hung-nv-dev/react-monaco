@@ -214,30 +214,32 @@ function createPipeCommandCompletions(
 
 /**
  * Get snippet text for pipe commands
+ * Includes space before command name for "| eval" format
  */
 function getPipeCommandSnippet(name: string): string {
   switch (name) {
     case 'last':
-      return 'last ${1:7} ${2|days,hours,minutes|}';
+      return ' last ${1:7} ${2|days,hours,minutes|}';
     case 'dedup':
-      return 'dedup ${1:field}';
+      return ' dedup ${1:field}';
     case 'eval':
-      return 'eval ${1:new_field} = ${2:expression}';
+      return ' eval ${1:new_field} = ${2:expression}';
     case 'agg':
-      return 'agg ${1|count(),sum(),avg(),min(),max()|} by ${2:field}';
+      return ' agg ${1|count(),sum(),avg(),min(),max()|} by ${2:field}';
     case 'order':
-      return 'order by ${1:field} ${2|desc,asc|}';
+      return ' order by ${1:field} ${2|desc,asc|}';
     case 'where':
-      return 'where ${1:condition}';
+      return ' where ${1:condition}';
     case 'regex':
-      return 'regex ${1:new_field} = ${2:field} ${3:1} "${4:pattern}"';
+      return ' regex ${1:new_field} = ${2:field} ${3:1} "${4:pattern}"';
     default:
-      return name;
+      return ' ' + name;
   }
 }
 
 /**
  * Create completion items for keywords with SQL-like behavior
+ * filterText includes both lowercase and uppercase versions for case-insensitive matching
  */
 function createKeywordCompletions(
   range: monaco.IRange,
@@ -276,10 +278,9 @@ function createKeywordCompletions(
       insertText = `${keyword.word} JOIN \${1:table} ON \${2:condition}`;
       insertTextRules = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
     }
-    // WHERE with condition placeholder
+    // WHERE keyword
     else if (keyword.word === 'WHERE') {
-      insertText = 'WHERE ${1:field} ${2|=,!=,>,<,>=,<=,~,!~,IN|} ${3:value}';
-      insertTextRules = monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet;
+      insertText = 'WHERE ';
     }
     // IN with parentheses
     else if (keyword.word === 'IN') {
@@ -309,6 +310,7 @@ function createKeywordCompletions(
       documentation: keyword.description,
       insertText,
       insertTextRules,
+      filterText: `${keyword.word.toLowerCase()} ${keyword.word}`,
       range,
       sortText,
     };
@@ -317,18 +319,23 @@ function createKeywordCompletions(
 
 /**
  * Create completion items for logical operators with pipe
+ * filterText includes lowercase versions for case-insensitive matching
  */
 function createLogicalOperatorCompletions(
-  range: monaco.IRange
+  range: monaco.IRange,
+  textBefore: string = ''
 ): monaco.languages.CompletionItem[] {
+  const upperText = textBefore.toUpperCase();
+  const hasGroupBy = upperText.includes('GROUP BY');
+
   const items: monaco.languages.CompletionItem[] = [
     {
       label: 'AND',
       kind: monaco.languages.CompletionItemKind.Keyword,
       detail: 'Logical AND',
       documentation: 'Both conditions must be true',
-      insertText: 'AND ${1:field} ${2|=,!=,>,<,>=,<=,~,!~|} ${3:value}',
-      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      insertText: 'AND ',
+      filterText: 'and AND',
       range,
       sortText: '0000',
     },
@@ -337,8 +344,8 @@ function createLogicalOperatorCompletions(
       kind: monaco.languages.CompletionItemKind.Keyword,
       detail: 'Logical OR',
       documentation: 'Either condition can be true',
-      insertText: 'OR ${1:field} ${2|=,!=,>,<,>=,<=,~,!~|} ${3:value}',
-      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      insertText: 'OR ',
+      filterText: 'or OR',
       range,
       sortText: '0001',
     },
@@ -348,6 +355,7 @@ function createLogicalOperatorCompletions(
       detail: 'Logical NOT',
       documentation: 'Negate the condition',
       insertText: 'NOT ',
+      filterText: 'not NOT',
       range,
       sortText: '0002',
     },
@@ -358,6 +366,7 @@ function createLogicalOperatorCompletions(
       documentation: 'Check if value is in a list',
       insertText: 'IN (${1:values})',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      filterText: 'in IN',
       range,
       sortText: '0003',
     },
@@ -366,8 +375,9 @@ function createLogicalOperatorCompletions(
       kind: monaco.languages.CompletionItemKind.Operator,
       detail: 'Pipe operator',
       documentation: 'Start a pipe command (last, dedup, eval, agg, order)',
-      insertText: '| ${1|last,dedup,eval,agg,order by,where|}',
+      insertText: '| ${1|last,dedup,eval,agg,order by,where|} ',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      filterText: '| pipe',
       range,
       sortText: '0010',
     },
@@ -378,20 +388,41 @@ function createLogicalOperatorCompletions(
       documentation: 'Sort results by field',
       insertText: 'ORDER BY ${1:field} ${2|ASC,DESC|}',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      filterText: 'order by ORDER BY',
       range,
       sortText: '0020',
     },
-    {
+  ];
+
+  // Only show GROUP BY if not already present
+  if (!hasGroupBy) {
+    items.push({
       label: 'GROUP BY',
       kind: monaco.languages.CompletionItemKind.Keyword,
       detail: 'Group results',
       documentation: 'Group results by field',
       insertText: 'GROUP BY ${1:field}',
       insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      filterText: 'group by GROUP BY',
       range,
       sortText: '0021',
-    },
-  ];
+    });
+  }
+
+  // Show HAVING only after GROUP BY
+  if (hasGroupBy) {
+    items.push({
+      label: 'HAVING',
+      kind: monaco.languages.CompletionItemKind.Keyword,
+      detail: 'Filter groups',
+      documentation: 'Filter groups after GROUP BY',
+      insertText: 'HAVING ${1:condition}',
+      insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+      filterText: 'having HAVING',
+      range,
+      sortText: '0019',
+    });
+  }
 
   return items;
 }
@@ -451,19 +482,34 @@ function createSnippetCompletions(
 }
 
 /**
- * Create SELECT keyword with * as first suggestion
+ * Create SELECT keyword completions - both SELECT and SELECT *
+ * Using '!' prefix in sortText to ensure they appear first (before '0' in ASCII)
+ * filterText allows matching against lowercase input
  */
-function createSelectCompletion(range: monaco.IRange): monaco.languages.CompletionItem {
-  return {
-    label: 'SELECT',
-    kind: monaco.languages.CompletionItemKind.Keyword,
-    detail: 'SQL SELECT statement',
-    documentation: 'Select fields to return. Use * for all fields.',
-    insertText: 'SELECT ${1|*,field1,field2|} ',
-    insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
-    range,
-    sortText: '0000',
-  };
+function createSelectCompletions(range: monaco.IRange): monaco.languages.CompletionItem[] {
+  return [
+    {
+      label: 'SELECT',
+      kind: monaco.languages.CompletionItemKind.Keyword,
+      detail: 'SQL SELECT statement',
+      documentation: 'Select specific fields to return',
+      insertText: 'SELECT ',
+      filterText: 'select SELECT',
+      range,
+      sortText: '!0000',
+      preselect: true,
+    },
+    {
+      label: 'SELECT *',
+      kind: monaco.languages.CompletionItemKind.Keyword,
+      detail: 'Select all fields',
+      documentation: 'Select all fields from the data source',
+      insertText: 'SELECT * ',
+      filterText: 'select* select * SELECT* SELECT *',
+      range,
+      sortText: '!0001',
+    },
+  ];
 }
 
 /**
@@ -483,6 +529,75 @@ function createFromCompletion(range: monaco.IRange): monaco.languages.Completion
 }
 
 /**
+ * Create * completion for SELECT *
+ */
+function createStarCompletion(range: monaco.IRange): monaco.languages.CompletionItem {
+  return {
+    label: '*',
+    kind: monaco.languages.CompletionItemKind.Keyword,
+    detail: 'All fields',
+    documentation: 'Select all indexed fields',
+    insertText: '* ',
+    filterText: '* star all',
+    range,
+    sortText: '!0000',
+  };
+}
+
+/**
+ * Check if we're right after SELECT keyword (need * and field suggestions)
+ */
+function isAfterSelectKeyword(textBefore: string): boolean {
+  const trimmed = textBefore.trimEnd();
+  return /\bSELECT\s*$/i.test(trimmed);
+}
+
+/**
+ * Check if we're after a comma in SELECT clause
+ */
+function isAfterSelectComma(textBefore: string, clause: ClauseContext): boolean {
+  if (clause !== 'SELECT') return false;
+  const trimmed = textBefore.trimEnd();
+  return trimmed.endsWith(',');
+}
+
+/**
+ * Check if we're after AND/OR keywords (need field suggestions)
+ */
+function isAfterLogicalKeyword(textBefore: string): boolean {
+  const trimmed = textBefore.trimEnd().toUpperCase();
+  return /\b(AND|OR)\s*$/i.test(trimmed);
+}
+
+/**
+ * Check if we're after pipe commands that need field suggestions (agg by, dedup, eval)
+ */
+function isAfterPipeFieldContext(textBefore: string): boolean {
+  const trimmed = textBefore.trimEnd();
+  // After "agg by", "agg count by", etc.
+  if (/\|\s*agg\s+(?:count\s+)?by\s*$/i.test(trimmed)) return true;
+  if (/\|\s*agg\s+(?:count\s+)?by\s+[\w,\s]+,\s*$/i.test(trimmed)) return true;
+  // After "dedup"
+  if (/\|\s*dedup\s*$/i.test(trimmed)) return true;
+  if (/\|\s*dedup\s+[\w,\s]+,\s*$/i.test(trimmed)) return true;
+  // After "eval field ="
+  if (/\|\s*eval\s+\w+\s*=\s*$/i.test(trimmed)) return true;
+  // After "order by"
+  if (/\|\s*order\s+by\s*$/i.test(trimmed)) return true;
+  if (/\|\s*order\s+by\s+[\w,\s]+,\s*$/i.test(trimmed)) return true;
+  return false;
+}
+
+/**
+ * Check if we're after comparison operator (need field/function/value suggestions)
+ */
+function isAfterComparisonOperator(textBefore: string): boolean {
+  const trimmed = textBefore.trimEnd();
+  // After =, !=, ~, !~, >, >=, <, <=
+  return /[=!~><]\s*$/.test(trimmed) || /\s+IN\s*\(\s*$/i.test(trimmed);
+}
+
+/**
  * Get completions based on expected type
  */
 function getCompletionsByType(
@@ -490,7 +605,8 @@ function getCompletionsByType(
   range: monaco.IRange,
   wordAtCursor: string,
   clause: ClauseContext,
-  parentField?: string
+  parentField?: string,
+  fullTextBefore: string = ''
 ): monaco.languages.CompletionItem[] {
   switch (expectedType) {
     case 'FIELD':
@@ -509,7 +625,7 @@ function getCompletionsByType(
       return createPipeCommandCompletions(range);
 
     case 'LOGICAL_OPERATOR':
-      return createLogicalOperatorCompletions(range);
+      return createLogicalOperatorCompletions(range, fullTextBefore);
 
     case 'TIME_UNIT':
       return createTimeUnitCompletions(range);
@@ -521,8 +637,11 @@ function getCompletionsByType(
       return createFunctionCompletions(range, '0');
 
     case 'VALUE':
-      // After operator, suggest common values or let user type
-      return [];
+      // After operator, suggest fields and functions (for field-to-field comparison)
+      return [
+        ...createFieldCompletions(range, undefined, '1'),
+        ...createFunctionCompletions(range, '2'),
+      ];
 
     case 'ANY':
     default:
@@ -611,31 +730,129 @@ export const socqlCompletionProvider: monaco.languages.CompletionItemProvider = 
     let suggestions: monaco.languages.CompletionItem[] = [];
     const wordLower = ctx.wordAtCursor.toLowerCase();
 
-    // Special case: empty or start of query - prioritize SELECT
-    if (ctx.currentClause === 'NONE') {
-      if (!wordLower || 's'.startsWith(wordLower) || 'se'.startsWith(wordLower) || wordLower.startsWith('s')) {
-        suggestions.push(createSelectCompletion(range));
+    // Get full text before cursor for context checking
+    const fullText = model.getValue();
+    const offset = model.getOffsetAt(position);
+    const fullTextBefore = fullText.substring(0, offset);
+
+    // After a completed value - suggest AND, OR, NOT, IN, |, ORDER BY, GROUP BY
+    // This check must come BEFORE the NONE clause check to handle cases like "field = 'value' "
+    if (isAfterValue(ctx.textBeforeCursor)) {
+      suggestions = createLogicalOperatorCompletions(range, fullTextBefore);
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
       }
-      // Add other primary keywords
+
+      return { suggestions };
+    }
+
+    // After SELECT keyword - suggest * and fields
+    if (isAfterSelectKeyword(ctx.textBeforeCursor)) {
+      suggestions.push(createStarCompletion(range));
+      suggestions.push(...createFieldCompletions(range, undefined, '1'));
+      suggestions.push(...createFunctionCompletions(range, '2'));
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
+      }
+
+      return { suggestions };
+    }
+
+    // After comma in SELECT - suggest fields
+    if (isAfterSelectComma(ctx.textBeforeCursor, ctx.currentClause)) {
+      suggestions.push(...createFieldCompletions(range, undefined, '1'));
+      suggestions.push(...createFunctionCompletions(range, '2'));
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
+      }
+
+      return { suggestions };
+    }
+
+    // After AND/OR - suggest fields and functions
+    if (isAfterLogicalKeyword(ctx.textBeforeCursor)) {
+      suggestions.push(...createFieldCompletions(range, undefined, '1'));
+      suggestions.push(...createFunctionCompletions(range, '2'));
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
+      }
+
+      return { suggestions };
+    }
+
+    // After pipe commands that need field suggestions (agg by, dedup, eval, order by)
+    if (isAfterPipeFieldContext(ctx.textBeforeCursor)) {
+      suggestions.push(...createFieldCompletions(range, undefined, '1'));
+      suggestions.push(...createFunctionCompletions(range, '2'));
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
+      }
+
+      return { suggestions };
+    }
+
+    // After comparison operator - suggest fields and functions (for field-to-field comparison)
+    if (isAfterComparisonOperator(ctx.textBeforeCursor)) {
+      suggestions.push(...createFieldCompletions(range, undefined, '1'));
+      suggestions.push(...createFunctionCompletions(range, '2'));
+
+      // Filter by what user is typing
+      if (wordLower) {
+        suggestions = suggestions.filter(s => {
+          const label = typeof s.label === 'string' ? s.label : s.label.label;
+          return label.toLowerCase().startsWith(wordLower);
+        });
+      }
+
+      return { suggestions };
+    }
+
+    // Special case: empty or start of query - prioritize SELECT and SELECT *
+    if (ctx.currentClause === 'NONE') {
+      // Add SELECT and SELECT * at the top (highest priority with sortText '!0000' and '!0001')
+      suggestions.push(...createSelectCompletions(range));
+
+      // Add other primary keywords with lower priority
       suggestions.push(...createKeywordCompletions(range, ctx.wordAtCursor, ctx.currentClause));
       suggestions.push(...createFieldCompletions(range, undefined, '5'));
       suggestions.push(...createFunctionCompletions(range, '6'));
       suggestions.push(...createSnippetCompletions(range));
 
-      // Filter by what user is typing
-      if (wordLower) {
-        suggestions = suggestions.filter(s => {
-          const label = typeof s.label === 'string' ? s.label : s.label.label;
-          return label.toLowerCase().startsWith(wordLower);
-        });
-      }
-
-      return { suggestions };
-    }
-
-    // After a completed value - suggest AND, OR, NOT, IN, |, ORDER BY, GROUP BY
-    if (isAfterValue(ctx.textBeforeCursor)) {
-      suggestions = createLogicalOperatorCompletions(range);
+      // Remove duplicate SELECT from keywords if we already added it
+      const seenLabels = new Set<string>();
+      suggestions = suggestions.filter(s => {
+        const label = typeof s.label === 'string' ? s.label : s.label.label;
+        if (seenLabels.has(label)) {
+          return false;
+        }
+        seenLabels.add(label);
+        return true;
+      });
 
       // Filter by what user is typing
       if (wordLower) {
@@ -648,7 +865,7 @@ export const socqlCompletionProvider: monaco.languages.CompletionItemProvider = 
       return { suggestions };
     }
 
-    // After SELECT with fields - prioritize FROM, then WHERE
+    // After SELECT with fields - prioritize FROM, then WHERE, then pipe |
     if (needsFromSuggestion(ctx.textBeforeCursor, ctx.currentClause)) {
       suggestions.push(createFromCompletion(range));
       // Also suggest WHERE directly
@@ -657,13 +874,25 @@ export const socqlCompletionProvider: monaco.languages.CompletionItemProvider = 
         kind: monaco.languages.CompletionItemKind.Keyword,
         detail: 'Filter condition',
         documentation: 'Filter data based on conditions',
-        insertText: 'WHERE ${1:field} ${2|=,!=,>,<,>=,<=,~,!~|} ${3:value}',
-        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        insertText: 'WHERE ',
+        filterText: 'where WHERE',
         range,
         sortText: '0001',
       });
+      // Also suggest pipe operator
+      suggestions.push({
+        label: '|',
+        kind: monaco.languages.CompletionItemKind.Operator,
+        detail: 'Pipe operator',
+        documentation: 'Start a pipe command (where, agg, dedup, eval, last, order)',
+        insertText: '| ${1|where,agg,dedup,eval,last,order by|} ',
+        insertTextRules: monaco.languages.CompletionItemInsertTextRule.InsertAsSnippet,
+        filterText: '| pipe',
+        range,
+        sortText: '0002',
+      });
       // Add more fields if user might want to add more
-      suggestions.push(...createFieldCompletions(range, undefined, '2'));
+      suggestions.push(...createFieldCompletions(range, undefined, '3'));
     }
 
     // Get context-based completions
@@ -672,7 +901,8 @@ export const socqlCompletionProvider: monaco.languages.CompletionItemProvider = 
       range,
       ctx.wordAtCursor,
       ctx.currentClause,
-      ctx.parentField
+      ctx.parentField,
+      fullTextBefore
     );
 
     // Merge with existing suggestions, avoiding duplicates

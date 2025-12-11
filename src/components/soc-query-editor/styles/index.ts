@@ -96,4 +96,21 @@ export const MonacoGlobalStyles = css`
     color: #bfbfbf;
     font-style: italic;
   }
+
+  /* Remove line highlight/hover effect */
+  .monaco-editor .view-overlays .current-line {
+    display: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .monaco-editor .margin-view-overlays .current-line-margin {
+    display: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  .monaco-editor .lines-content .current-line-margin {
+    border: none !important;
+  }
 `;

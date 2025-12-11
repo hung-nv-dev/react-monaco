@@ -48,7 +48,8 @@ export const socqlLightTheme: monaco.editor.IStandaloneThemeData = {
   colors: {
     'editor.background': '#FFFFFF',
     'editor.foreground': '#262626',
-    'editor.lineHighlightBackground': '#FAFAFA',
+    'editor.lineHighlightBackground': '#FFFFFF00',
+    'editor.lineHighlightBorder': '#FFFFFF00',
     'editor.selectionBackground': '#BAE7FF',
     'editor.inactiveSelectionBackground': '#E6F7FF',
     'editorCursor.foreground': '#1890FF',
@@ -114,7 +115,8 @@ export const socqlDarkTheme: monaco.editor.IStandaloneThemeData = {
   colors: {
     'editor.background': '#141414',
     'editor.foreground': '#D9D9D9',
-    'editor.lineHighlightBackground': '#1F1F1F',
+    'editor.lineHighlightBackground': '#14141400',
+    'editor.lineHighlightBorder': '#14141400',
     'editor.selectionBackground': '#177DDC50',
     'editor.inactiveSelectionBackground': '#177DDC30',
     'editorCursor.foreground': '#177DDC',
