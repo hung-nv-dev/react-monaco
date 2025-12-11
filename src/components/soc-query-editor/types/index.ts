@@ -1,25 +1,6 @@
 import type { ValidationError } from '../lib/socql';
 
 export type EditorMode = 'compact' | 'expanded' | 'auto';
-export type DataSource = 'siem' | 'edr' | 'both';
-
-export interface TimeRange {
-  type: 'relative' | 'absolute';
-  relativeValue?: string;
-  absoluteStart?: string;
-  absoluteEnd?: string;
-}
-
-export interface SavedQuery {
-  id: string;
-  name: string;
-  query: string;
-  description?: string;
-  timeRange?: TimeRange;
-  createdAt: string;
-  updatedAt: string;
-  tags?: string[];
-}
 
 export interface SOCEditorOptions {
   fontSize?: number;
@@ -35,30 +16,14 @@ export interface SOCQueryEditorProps {
   defaultValue?: string;
   onChange?: (value: string) => void;
   onValidationChange?: (errors: ValidationError[]) => void;
-  onSearch?: (query: string) => void;
-  dataSource?: DataSource;
-  onDataSourceChange?: (dataSource: DataSource) => void;
-  isSearching?: boolean;
-  onCancel?: () => void;
-  /** Search progress percentage (0-100). If undefined, shows indeterminate progress when isSearching is true. */
-  searchProgress?: number;
   validateOnChange?: boolean;
   validationDebounce?: number;
   height?: string | number;
   minHeight?: string | number;
   maxHeight?: string | number;
-  showToolbar?: boolean;
-  showErrorPanel?: boolean;
-  showExamples?: boolean;
-  showQuickInsert?: boolean;
   mode?: EditorMode;
   onModeChange?: (mode: 'compact' | 'expanded') => void;
   theme?: 'socql-light' | 'socql-dark';
-  enableLocalStorage?: boolean;
-  storageKey?: string;
-  savedQueries?: SavedQuery[];
-  onSave?: (query: SavedQuery) => void;
-  onLoad?: (query: SavedQuery) => void;
   editorOptions?: SOCEditorOptions;
   disabled?: boolean;
   readOnly?: boolean;

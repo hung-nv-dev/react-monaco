@@ -8,21 +8,17 @@ import {
   SOCQL_LANGUAGE_ID,
   validateQuery,
   setValidationMarkers,
-  clearValidationMarkers,
   type ValidationError,
 } from './lib/socql';
-import { EditorToolbar } from './components/EditorToolbar';
 import { ErrorPanel } from './components/ErrorPanel';
-import { QuickInsertButtons } from './components/QuickInsertButtons';
-import { SaveQueryModal } from './components/SaveQueryModal';
-import { useQueryStorage } from './hooks/useQueryStorage';
-import type { SOCQueryEditorProps, SavedQuery, DataSource } from './types';
+import type { SOCQueryEditorProps } from './types';
 import {
   EditorWrapper,
   EditorContainer,
   MonacoWrapper,
   LoadingOverlay,
   MonacoGlobalStyles,
+  ErrorIconContainer,
 } from './styles';
 
 const GlobalStyles = createGlobalStyle`
@@ -36,24 +32,10 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
   defaultValue = '',
   onChange,
   onValidationChange,
-  onSearch,
-  dataSource: controlledDataSource,
-  onDataSourceChange,
-  isSearching = false,
-  onCancel,
-  searchProgress,
   validateOnChange = true,
   validationDebounce = 300,
-  showToolbar = false,
-  showErrorPanel = false,
-  showQuickInsert = false,
   theme = 'socql-light',
   editorOptions,
-  enableLocalStorage = false,
-  storageKey,
-  savedQueries: controlledSavedQueries,
-  onSave,
-  onLoad,
   disabled = false,
   readOnly = false,
   loading = false,
@@ -66,18 +48,12 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const validationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const storage = useQueryStorage({ storageKey, enabled: enableLocalStorage });
-
   const [internalValue, setInternalValue] = useState(defaultValue);
   const [errors, setErrors] = useState<ValidationError[]>([]);
   const [isEditorReady, setIsEditorReady] = useState(false);
-  const [internalDataSource, setInternalDataSource] = useState<DataSource>('both');
-  const [saveModalOpen, setSaveModalOpen] = useState(false);
 
   const isControlled = controlledValue !== undefined;
   const currentValue = isControlled ? controlledValue : internalValue;
-  const currentDataSource = controlledDataSource ?? internalDataSource;
-  const savedQueries = controlledSavedQueries ?? storage.savedQueries;
 
   // Initialize SOCQL language once
   useEffect(() => {
@@ -101,7 +77,7 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
       lineNumbers: 'off',
       wordWrap: editorOptions?.wordWrap ?? 'on',
       tabSize: editorOptions?.tabSize ?? 2,
-      readOnly: readOnly || disabled || isSearching,
+      readOnly: readOnly || disabled,
       scrollBeyondLastLine: false,
       renderLineHighlight: 'none',
       glyphMargin: false,
@@ -149,11 +125,6 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
       }
     });
 
-    // Handle Ctrl+Enter for search
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      if (!isSearching) onSearch?.(editor.getValue());
-    });
-
     // Initial validation
     if (validateOnChange && currentValue) {
       const model = editor.getModel();
@@ -196,8 +167,8 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
 
   // Handle readOnly changes
   useEffect(() => {
-    editorRef.current?.updateOptions({ readOnly: readOnly || disabled || isSearching });
-  }, [readOnly, disabled, isSearching]);
+    editorRef.current?.updateOptions({ readOnly: readOnly || disabled });
+  }, [readOnly, disabled]);
 
   // Handle theme changes
   useEffect(() => {
@@ -205,35 +176,6 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
       monaco.editor.setTheme(theme);
     }
   }, [theme, isEditorReady]);
-
-  const handleSearch = useCallback(() => {
-    if (!isSearching) onSearch?.(editorRef.current?.getValue() || '');
-  }, [onSearch, isSearching]);
-
-  const handleClear = useCallback(() => {
-    if (editorRef.current) {
-      editorRef.current.setValue('');
-      const model = editorRef.current.getModel();
-      if (model) clearValidationMarkers(model);
-    }
-    if (!isControlled) setInternalValue('');
-    setErrors([]);
-    onChange?.('');
-  }, [isControlled, onChange]);
-
-  const handleInsertText = useCallback((text: string) => {
-    if (editorRef.current) {
-      const position = editorRef.current.getPosition();
-      if (position) {
-        editorRef.current.executeEdits('insert', [{
-          range: new monaco.Range(position.lineNumber, position.column, position.lineNumber, position.column),
-          text,
-          forceMoveMarkers: true,
-        }]);
-        editorRef.current.focus();
-      }
-    }
-  }, []);
 
   const handleErrorClick = useCallback((error: ValidationError) => {
     if (editorRef.current) {
@@ -243,64 +185,23 @@ export const SOCQueryEditor: FC<SOCQueryEditorProps> = ({
     }
   }, []);
 
-  const handleDataSourceChange = useCallback((ds: DataSource) => {
-    onDataSourceChange ? onDataSourceChange(ds) : setInternalDataSource(ds);
-  }, [onDataSourceChange]);
-
-  const handleSaveQuery = useCallback((query: SavedQuery) => {
-    if (enableLocalStorage) storage.saveQuery(query);
-    onSave?.(query);
-    setSaveModalOpen(false);
-  }, [enableLocalStorage, storage, onSave]);
-
-  const handleLoadQuery = useCallback((query: SavedQuery) => {
-    editorRef.current?.setValue(query.query);
-    if (!isControlled) setInternalValue(query.query);
-    onChange?.(query.query);
-    onLoad?.(query);
-  }, [isControlled, onChange, onLoad]);
-
   return (
     <>
       <GlobalStyles />
-      <EditorWrapper $disabled={disabled} className={className} style={style}>
-        {showToolbar && (
-          <EditorToolbar
-            onSearch={handleSearch}
-            onClear={handleClear}
-            disabled={disabled}
-            hasErrors={errors.some((e) => e.severity === 'error')}
-            dataSource={currentDataSource}
-            onDataSourceChange={onDataSourceChange ? handleDataSourceChange : undefined}
-            onSave={() => setSaveModalOpen(true)}
-            onLoadQuery={handleLoadQuery}
-            savedQueries={savedQueries}
-            enableSave={enableLocalStorage || !!onSave}
-            isSearching={isSearching}
-            onCancel={onCancel}
-            searchProgress={searchProgress}
-          />
-        )}
-
-        {showQuickInsert && <QuickInsertButtons onInsert={handleInsertText} disabled={disabled || isSearching} />}
-
+      <EditorWrapper $disabled={disabled} $hasErrors={errors.length > 0} className={className} style={style}>
         <EditorContainer>
-          {(loading || isSearching) && (
+          {loading && (
             <LoadingOverlay>
-              <Spin tip={isSearching ? 'Searching...' : undefined} />
+              <Spin />
             </LoadingOverlay>
           )}
           <MonacoWrapper ref={containerRef} />
+          {errors.length > 0 && (
+            <ErrorIconContainer>
+              <ErrorPanel errors={errors} onErrorClick={handleErrorClick} />
+            </ErrorIconContainer>
+          )}
         </EditorContainer>
-
-        {showErrorPanel && errors.length > 0 && <ErrorPanel errors={errors} onErrorClick={handleErrorClick} />}
-
-        <SaveQueryModal
-          open={saveModalOpen}
-          onClose={() => setSaveModalOpen(false)}
-          onSave={handleSaveQuery}
-          currentQuery={currentValue}
-        />
       </EditorWrapper>
     </>
   );

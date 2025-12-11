@@ -1,15 +1,6 @@
-import styled, { css, keyframes } from 'styled-components';
+import styled, { css } from 'styled-components';
 
-const pulse = keyframes`
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
-`;
-
-export const EditorWrapper = styled.div<{ $disabled?: boolean }>`
+export const EditorWrapper = styled.div<{ $disabled?: boolean; $hasErrors?: boolean }>`
   display: flex;
   flex-direction: column;
   border: 1px solid #d9d9d9;
@@ -28,6 +19,17 @@ export const EditorWrapper = styled.div<{ $disabled?: boolean }>`
     box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
   }
 
+  ${({ $hasErrors }) =>
+    $hasErrors &&
+    css`
+      border-color: #ff4d4f;
+
+      &:focus-within {
+        border-color: #ff4d4f;
+        box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.2);
+      }
+    `}
+
   ${({ $disabled }) =>
     $disabled &&
     css`
@@ -44,10 +46,12 @@ export const EditorContainer = styled.div`
   z-index: 1;
   overflow: hidden;
   box-sizing: border-box;
+  display: flex;
+  align-items: stretch;
 `;
 
 export const MonacoWrapper = styled.div`
-  width: 100%;
+  flex: 1;
   height: 100%;
   min-height: 100px;
   position: relative;
@@ -70,206 +74,12 @@ export const LoadingOverlay = styled.div`
   z-index: 10;
 `;
 
-export const Toolbar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
-  background: #fafafa;
-  border-bottom: 1px solid #e8e8e8;
-  gap: 8px;
-  position: relative;
-  z-index: 0;
-`;
-
-export const ToolbarLeft = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-export const ToolbarRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-`;
-
-export const QuickInsertWrapper = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  padding: 6px 12px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #e8e8e8;
-  position: relative;
-  z-index: 0;
-`;
-
-export const QuickInsertGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-`;
-
-export const QuickInsertLabel = styled.span`
-  font-size: 11px;
-  color: #8c8c8c;
-  margin-right: 4px;
-`;
-
-export const ErrorPanel = styled.div<{ $hasErrors?: boolean }>`
-  border-top: 1px solid #e8e8e8;
-  background: #fffbe6;
-  max-height: 150px;
-  overflow-y: auto;
-  position: relative;
-  z-index: 0;
-
-  ${({ $hasErrors }) =>
-    $hasErrors &&
-    css`
-      background: #fff2f0;
-    `}
-`;
-
-export const ErrorHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.02);
-  cursor: pointer;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.04);
-  }
-`;
-
-export const ErrorList = styled.ul`
-  padding: 0;
-  margin: 0;
-  list-style: none;
-`;
-
-export const ErrorItem = styled.li`
+export const ErrorIconContainer = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 6px 12px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:hover {
-    background: rgba(0, 0, 0, 0.02);
-  }
-
-  &:last-child {
-    border-bottom: none;
-  }
-`;
-
-export const ErrorIcon = styled.span<{ $severity?: 'error' | 'warning' | 'info' }>`
+  padding-top: 8px;
+  padding-right: 4px;
   flex-shrink: 0;
-  margin-top: 2px;
-
-  ${({ $severity }) => {
-    switch ($severity) {
-      case 'error':
-        return css`color: #ff4d4f;`;
-      case 'warning':
-        return css`color: #faad14;`;
-      case 'info':
-        return css`color: #1890ff;`;
-      default:
-        return '';
-    }
-  }}
-`;
-
-export const ErrorContent = styled.div`
-  flex: 1;
-  min-width: 0;
-`;
-
-export const ErrorMessage = styled.div`
-  font-size: 13px;
-  color: #262626;
-  word-break: break-word;
-`;
-
-export const ErrorLocation = styled.div`
-  font-size: 11px;
-  color: #8c8c8c;
-  margin-top: 2px;
-`;
-
-export const SuccessBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 12px;
-  background: #f6ffed;
-  border-top: 1px solid #b7eb8f;
-  color: #52c41a;
-  font-size: 13px;
-`;
-
-export const ExamplesPanel = styled.div`
-  border-left: 1px solid #e8e8e8;
-  background: #fafafa;
-  width: 280px;
-  flex-shrink: 0;
-`;
-
-export const ExamplesHeader = styled.div`
-  padding: 8px 12px;
-  font-weight: 500;
-  border-bottom: 1px solid #e8e8e8;
-`;
-
-export const ExamplesList = styled.div`
-  max-height: 300px;
-  overflow-y: auto;
-`;
-
-export const ExamplesItem = styled.div`
-  padding: 8px 12px;
-  cursor: pointer;
-  border-bottom: 1px solid #f0f0f0;
-
-  &:hover {
-    background: #e6f7ff;
-  }
-`;
-
-export const ExamplesItemTitle = styled.div`
-  font-weight: 500;
-  font-size: 13px;
-  color: #262626;
-`;
-
-export const ExamplesItemDesc = styled.div`
-  font-size: 12px;
-  color: #8c8c8c;
-  margin-top: 2px;
-`;
-
-export const SearchProgress = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  background: rgba(24, 144, 255, 0.1);
-  border-radius: 4px;
-  animation: ${pulse} 1.5s ease-in-out infinite;
-`;
-
-export const SearchProgressText = styled.span`
-  font-size: 12px;
-  color: #1890ff;
-  font-weight: 500;
-  white-space: nowrap;
 `;
 
 // Global styles for Monaco editor

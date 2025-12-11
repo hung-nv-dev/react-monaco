@@ -58,9 +58,6 @@ function App() {
       <SOCQueryEditor
         value={query}
         onChange={setQuery}
-        showToolbar={false}
-        showQuickInsert={false}
-        showErrorPanel={true}
         placeholder="Enter your query here..."
       />
 
