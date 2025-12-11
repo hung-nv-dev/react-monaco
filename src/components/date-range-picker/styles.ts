@@ -28,15 +28,15 @@ export const QuickSelectItem = styled.div<{ $active?: boolean }>`
   transition: all 0.2s;
 
   &:hover {
-    background: #e6f7ff;
-    color: #1890ff;
+    background: #fff1f0;
+    color: #f5222d;
   }
 
   ${({ $active }) =>
     $active &&
     css`
-      background: #e6f7ff;
-      color: #1890ff;
+      background: #fff1f0;
+      color: #f5222d;
       font-weight: 500;
     `}
 `;
@@ -82,12 +82,20 @@ export const CalendarWrapper = styled.div<{
   $hasEnd?: boolean;
   $startDate?: string;
   $endDate?: string;
+  $isCurrentMonth?: boolean;
 }>`
   flex: 1;
 
   .ant-picker-calendar {
     .ant-picker-panel {
       border: none;
+    }
+
+    /* Hide year selector */
+    .ant-picker-calendar-header {
+      .ant-picker-calendar-year-select {
+        display: none;
+      }
     }
 
     .ant-picker-cell {
@@ -103,21 +111,43 @@ export const CalendarWrapper = styled.div<{
       border-radius: 4px;
     }
 
+    /* Hide default today highlight - we handle it ourselves */
+    .ant-picker-cell-today .ant-picker-cell-inner::before {
+      display: none !important;
+    }
+
+    /* Custom today highlight */
+    .ant-picker-cell-in-view .today-highlight {
+      border: 1px solid #f5222d;
+    }
+
     .ant-picker-cell-in-view {
       .range-start {
-        background: #1890ff;
+        background: #f5222d;
         color: #fff;
         border-radius: 4px 0 0 4px;
       }
 
       .range-end {
-        background: #1890ff;
+        background: #f5222d;
         color: #fff;
         border-radius: 0 4px 4px 0;
       }
 
       .in-range {
-        background: #e6f7ff;
+        background: #fff1f0;
+        border-radius: 0;
+      }
+
+      /* Hover preview styles */
+      .hover-end {
+        background: #ffa39e;
+        color: #fff;
+        border-radius: 0 4px 4px 0;
+      }
+
+      .in-hover-range {
+        background: #ffccc7;
         border-radius: 0;
       }
     }
@@ -131,7 +161,7 @@ export const CalendarWrapper = styled.div<{
       .ant-picker-cell-in-view {
         &[title="${$startDate}"] {
           .ant-picker-cell-inner {
-            background: #1890ff !important;
+            background: #f5222d !important;
             color: #fff !important;
             border-radius: 4px 0 0 4px !important;
           }
@@ -139,7 +169,7 @@ export const CalendarWrapper = styled.div<{
 
         &[title="${$endDate}"] {
           .ant-picker-cell-inner {
-            background: #1890ff !important;
+            background: #f5222d !important;
             color: #fff !important;
             border-radius: 0 4px 4px 0 !important;
           }
@@ -172,7 +202,7 @@ export const TriggerInput = styled.div<{ $disabled?: boolean }>`
   font-size: 14px;
 
   &:hover {
-    border-color: #1890ff;
+    border-color: #f5222d;
   }
 
   ${({ $disabled }) =>

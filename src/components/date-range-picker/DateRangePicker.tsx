@@ -3,6 +3,11 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Popover, Button, Calendar } from 'antd';
 import { CalendarOutlined } from '@ant-design/icons';
 import dayjs, { Dayjs } from 'dayjs';
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter';
+import isSameOrBefore from 'dayjs/plugin/isSameOrBefore';
+
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 import {
   PopoverContent,
   QuickSelectPanel,
@@ -74,16 +79,16 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   const [tempEndDate, setTempEndDate] = useState<Dayjs | null>(null);
   const [startInputValue, setStartInputValue] = useState('');
   const [endInputValue, setEndInputValue] = useState('');
-  const [displayLabel, setDisplayLabel] = useState<string | null>(null);
-  const [leftCalendarMonth, setLeftCalendarMonth] = useState<Dayjs>(dayjs().subtract(1, 'month'));
-  const [rightCalendarMonth, setRightCalendarMonth] = useState<Dayjs>(dayjs());
+  const [leftCalendarMonth, setLeftCalendarMonth] = useState<Dayjs>(dayjs());
+  const [rightCalendarMonth, setRightCalendarMonth] = useState<Dayjs>(dayjs().add(1, 'month'));
+  const [hoverDate, setHoverDate] = useState<Dayjs | null>(null);
 
   // Initialize temp values when popover opens
   useEffect(() => {
     if (open) {
       if (value) {
-        const start = dayjs(value.startDate);
-        const end = dayjs(value.endDate);
+        const start = dayjs(value.timeFrom);
+        const end = dayjs(value.timeTo);
         setTempStartDate(start);
         setTempEndDate(end);
         setStartInputValue(start.format(DATE_FORMAT));
@@ -95,24 +100,19 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
         setTempEndDate(null);
         setStartInputValue('');
         setEndInputValue('');
-        setLeftCalendarMonth(dayjs().subtract(1, 'month'));
-        setRightCalendarMonth(dayjs());
+        setLeftCalendarMonth(dayjs());
+        setRightCalendarMonth(dayjs().add(1, 'month'));
       }
       setSelectedQuickRange(null);
     }
   }, [open, value]);
 
   const displayValue = useMemo(() => {
-    if (displayLabel) {
-      return displayLabel;
-    }
     if (value) {
-      const start = dayjs(value.startDate).format(DATE_FORMAT);
-      const end = dayjs(value.endDate).format(DATE_FORMAT);
-      return `${start} - ${end}`;
+      return value.label;
     }
     return '';
-  }, [value, displayLabel]);
+  }, [value]);
 
   const isApplyEnabled = useMemo(() => {
     if (selectedQuickRange && selectedQuickRange !== 'custom') {
@@ -129,11 +129,11 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
 
     const { start, end } = getQuickRangeDates(option.value);
     const newValue: DateRangeValue = {
-      startDate: start.valueOf(),
-      endDate: end.valueOf(),
+      timeFrom: start.valueOf(),
+      timeTo: end.valueOf(),
+      label: option.label,
     };
 
-    setDisplayLabel(option.label);
     onChange?.(newValue);
     setOpen(false);
   }, [onChange]);
@@ -186,12 +186,13 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   const handleApply = useCallback(() => {
     if (!tempStartDate || !tempEndDate) return;
 
+    const customLabel = `${tempStartDate.format(DATE_FORMAT)} - ${tempEndDate.format(DATE_FORMAT)}`;
     const newValue: DateRangeValue = {
-      startDate: tempStartDate.valueOf(),
-      endDate: tempEndDate.valueOf(),
+      timeFrom: tempStartDate.valueOf(),
+      timeTo: tempEndDate.valueOf(),
+      label: customLabel,
     };
 
-    setDisplayLabel(null);
     onChange?.(newValue);
     setOpen(false);
   }, [tempStartDate, tempEndDate, onChange]);
@@ -200,24 +201,64 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
     setOpen(false);
   }, []);
 
-  const cellRender = useCallback((current: Dayjs) => {
-    const isStart = tempStartDate && current.isSame(tempStartDate, 'day');
-    const isEnd = tempEndDate && current.isSame(tempEndDate, 'day');
-    const isInRange = tempStartDate && tempEndDate &&
-      current.isAfter(tempStartDate, 'day') &&
-      current.isBefore(tempEndDate, 'day');
+  const createCellRender = useCallback((calendarMonth: Dayjs) => {
+    return (current: Dayjs) => {
+      const isStart = tempStartDate && current.isSame(tempStartDate, 'day');
+      const isEnd = tempEndDate && current.isSame(tempEndDate, 'day');
+      const isInRange = tempStartDate && tempEndDate &&
+        current.isAfter(tempStartDate, 'day') &&
+        current.isBefore(tempEndDate, 'day');
 
-    let className = '';
-    if (isStart) className = 'range-start';
-    else if (isEnd) className = 'range-end';
-    else if (isInRange) className = 'in-range';
+      // Hover preview: show range between start date and hovered date when selecting end date
+      const isSelectingEnd = tempStartDate && !tempEndDate;
+      const isHoverEnd = isSelectingEnd && hoverDate && current.isSame(hoverDate, 'day');
+      const isInHoverRange = isSelectingEnd && hoverDate && (
+        (hoverDate.isAfter(tempStartDate, 'day') &&
+          current.isAfter(tempStartDate, 'day') &&
+          current.isBefore(hoverDate, 'day')) ||
+        (hoverDate.isBefore(tempStartDate, 'day') &&
+          current.isBefore(tempStartDate, 'day') &&
+          current.isAfter(hoverDate, 'day'))
+      );
 
-    return (
-      <div className={`ant-picker-cell-inner ${className}`}>
-        {current.date()}
-      </div>
-    );
+      // Only show today highlight if this calendar is showing the current month
+      const isToday = current.isSame(dayjs(), 'day');
+      const isCurrentMonth = calendarMonth.isSame(dayjs(), 'month');
+      const showTodayHighlight = isToday && isCurrentMonth;
+
+      let className = '';
+      if (isStart) className = 'range-start';
+      else if (isEnd) className = 'range-end';
+      else if (isInRange) className = 'in-range';
+      else if (isHoverEnd) className = 'hover-end';
+      else if (isInHoverRange) className = 'in-hover-range';
+      if (showTodayHighlight) className += ' today-highlight';
+
+      const handleMouseEnter = () => {
+        if (isSelectingEnd) {
+          setHoverDate(current);
+        }
+      };
+
+      return (
+        <div
+          className={`ant-picker-cell-inner ${className}`}
+          onMouseEnter={handleMouseEnter}
+        >
+          {current.date()}
+        </div>
+      );
+    };
+  }, [tempStartDate, tempEndDate, hoverDate]);
+
+  const handleCalendarsMouseLeave = useCallback(() => {
+    if (tempStartDate && !tempEndDate) {
+      setHoverDate(null);
+    }
   }, [tempStartDate, tempEndDate]);
+
+  const leftCellRender = useMemo(() => createCellRender(leftCalendarMonth), [createCellRender, leftCalendarMonth]);
+  const rightCellRender = useMemo(() => createCellRender(rightCalendarMonth), [createCellRender, rightCalendarMonth]);
 
   const handleLeftPanelChange = useCallback((date: Dayjs) => {
     setLeftCalendarMonth(date);
@@ -249,19 +290,20 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
         ))}
       </QuickSelectPanel>
       <CalendarPanel>
-        <CalendarsRow>
+        <CalendarsRow onMouseLeave={handleCalendarsMouseLeave}>
           <CalendarWrapper
             $hasStart={!!tempStartDate}
             $hasEnd={!!tempEndDate}
             $startDate={tempStartDate?.format('YYYY-MM-DD')}
             $endDate={tempEndDate?.format('YYYY-MM-DD')}
+            $isCurrentMonth={leftCalendarMonth.isSame(dayjs(), 'month')}
           >
             <Calendar
               fullscreen={false}
               value={leftCalendarMonth}
               onSelect={handleCalendarSelect}
               onPanelChange={handleLeftPanelChange}
-              fullCellRender={cellRender}
+              fullCellRender={leftCellRender}
             />
           </CalendarWrapper>
           <CalendarWrapper
@@ -269,13 +311,14 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
             $hasEnd={!!tempEndDate}
             $startDate={tempStartDate?.format('YYYY-MM-DD')}
             $endDate={tempEndDate?.format('YYYY-MM-DD')}
+            $isCurrentMonth={rightCalendarMonth.isSame(dayjs(), 'month')}
           >
             <Calendar
               fullscreen={false}
               value={rightCalendarMonth}
               onSelect={handleCalendarSelect}
               onPanelChange={handleRightPanelChange}
-              fullCellRender={cellRender}
+              fullCellRender={rightCellRender}
             />
           </CalendarWrapper>
         </CalendarsRow>
@@ -317,7 +360,7 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
       trigger="click"
       open={open}
       onOpenChange={setOpen}
-      placement="bottomLeft"
+      placement="bottomRight"
       arrow={false}
     >
       <TriggerInput
@@ -326,10 +369,10 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
         $disabled={disabled}
         onClick={() => !disabled && setOpen(true)}
       >
-        <CalendarOutlined style={{ marginRight: 8, color: '#bfbfbf' }} />
-        <span style={{ color: displayValue ? '#262626' : '#bfbfbf' }}>
+        <span style={{ flex: 1, color: displayValue ? '#262626' : '#bfbfbf' }}>
           {displayValue || placeholder}
         </span>
+        <CalendarOutlined style={{ marginLeft: 8, color: '#bfbfbf' }} />
       </TriggerInput>
     </Popover>
   );

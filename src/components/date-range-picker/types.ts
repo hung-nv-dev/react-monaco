@@ -1,8 +1,9 @@
 import type { CSSProperties } from 'react';
 
 export interface DateRangeValue {
-  startDate: number; // timestamp
-  endDate: number; // timestamp
+  timeFrom: number; // 13 digit timestamp
+  timeTo: number; // 13 digit timestamp
+  label: string; // "Last 7 Days" or date format "YYYY-MM-DD HH:mm:ss - YYYY-MM-DD HH:mm:ss"
 }
 
 export interface DateRangePickerProps {

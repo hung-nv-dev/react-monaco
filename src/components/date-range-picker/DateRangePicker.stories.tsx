@@ -34,51 +34,119 @@ const meta: Meta<typeof DateRangePicker> = {
 export default meta;
 type Story = StoryObj<typeof DateRangePicker>;
 
+// Helper component to show value output
+const ValueDisplay = ({ value }: { value?: DateRangeValue }) => {
+  if (!value) return null;
+  return (
+    <div
+      style={{
+        marginTop: 16,
+        padding: 12,
+        background: '#f6ffed',
+        border: '1px solid #b7eb8f',
+        borderRadius: 6,
+        fontSize: 13,
+        fontFamily: 'monospace',
+      }}
+    >
+      <div style={{ marginBottom: 8, fontWeight: 600, color: '#52c41a' }}>Output Value:</div>
+      <div>timeFrom: {value.timeFrom}</div>
+      <div>timeTo: {value.timeTo}</div>
+      <div>label: {value.label}</div>
+      <div style={{ marginTop: 8, color: '#8c8c8c' }}>
+        Formatted: {dayjs(value.timeFrom).format('YYYY-MM-DD HH:mm:ss')} - {dayjs(value.timeTo).format('YYYY-MM-DD HH:mm:ss')}
+      </div>
+    </div>
+  );
+};
+
+// Default story with value display
+const DefaultTemplate = () => {
+  const [value, setValue] = useState<DateRangeValue | undefined>();
+  return (
+    <div>
+      <DateRangePicker
+        value={value}
+        onChange={setValue}
+        placeholder="Select date range"
+      />
+      <ValueDisplay value={value} />
+    </div>
+  );
+};
+
 export const Default: Story = {
-  args: {
-    placeholder: 'Select date range',
-  },
+  render: () => <DefaultTemplate />,
+};
+
+// With initial value
+const WithInitialValueTemplate = () => {
+  const [value, setValue] = useState<DateRangeValue>({
+    timeFrom: dayjs().subtract(7, 'day').startOf('day').valueOf(),
+    timeTo: dayjs().endOf('day').valueOf(),
+    label: 'Last 7 Days',
+  });
+  return (
+    <div>
+      <DateRangePicker value={value} onChange={setValue} />
+      <ValueDisplay value={value} />
+    </div>
+  );
 };
 
 export const WithInitialValue: Story = {
-  args: {
-    value: {
-      startDate: dayjs().subtract(7, 'day').startOf('day').valueOf(),
-      endDate: dayjs().endOf('day').valueOf(),
-    },
-  },
+  render: () => <WithInitialValueTemplate />,
+};
+
+// Disabled state
+const DisabledTemplate = () => {
+  const [value] = useState<DateRangeValue>({
+    timeFrom: dayjs().subtract(30, 'day').startOf('day').valueOf(),
+    timeTo: dayjs().endOf('day').valueOf(),
+    label: 'Last 30 Days',
+  });
+  return (
+    <div>
+      <DateRangePicker
+        value={value}
+        disabled={true}
+        placeholder="Disabled picker"
+      />
+      <ValueDisplay value={value} />
+    </div>
+  );
 };
 
 export const Disabled: Story = {
-  args: {
-    disabled: true,
-    placeholder: 'Disabled picker',
-  },
+  render: () => <DisabledTemplate />,
+};
+
+// Custom placeholder
+const CustomPlaceholderTemplate = () => {
+  const [value, setValue] = useState<DateRangeValue | undefined>();
+  return (
+    <div>
+      <DateRangePicker
+        value={value}
+        onChange={setValue}
+        placeholder="Choose your date range..."
+      />
+      <ValueDisplay value={value} />
+    </div>
+  );
 };
 
 export const CustomPlaceholder: Story = {
-  args: {
-    placeholder: 'Choose your date range...',
-  },
+  render: () => <CustomPlaceholderTemplate />,
 };
 
-// Interactive example with state management
+// Interactive example with detailed output
 const InteractiveTemplate = () => {
   const [value, setValue] = useState<DateRangeValue | undefined>();
 
-  const handleChange = (newValue: DateRangeValue) => {
-    setValue(newValue);
-    console.log('Selected range:', {
-      startDate: newValue.startDate,
-      endDate: newValue.endDate,
-      startFormatted: dayjs(newValue.startDate).format('YYYY-MM-DD HH:mm:ss'),
-      endFormatted: dayjs(newValue.endDate).format('YYYY-MM-DD HH:mm:ss'),
-    });
-  };
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <DateRangePicker value={value} onChange={handleChange} />
+      <DateRangePicker value={value} onChange={setValue} />
       {value && (
         <div
           style={{
@@ -95,10 +163,11 @@ const InteractiveTemplate = () => {
           <pre style={{ margin: '8px 0 0 0' }}>
             {JSON.stringify(
               {
-                startDate: value.startDate,
-                endDate: value.endDate,
-                startFormatted: dayjs(value.startDate).format('YYYY-MM-DD HH:mm:ss'),
-                endFormatted: dayjs(value.endDate).format('YYYY-MM-DD HH:mm:ss'),
+                timeFrom: value.timeFrom,
+                timeTo: value.timeTo,
+                label: value.label,
+                timeFromFormatted: dayjs(value.timeFrom).format('YYYY-MM-DD HH:mm:ss'),
+                timeToFormatted: dayjs(value.timeTo).format('YYYY-MM-DD HH:mm:ss'),
               },
               null,
               2
@@ -114,14 +183,9 @@ export const Interactive: Story = {
   render: () => <InteractiveTemplate />,
 };
 
-// Example showing different quick range selections
+// Quick range selection demo
 const QuickRangeDemo = () => {
   const [value, setValue] = useState<DateRangeValue | undefined>();
-  const [label, setLabel] = useState<string>('');
-
-  const handleChange = (newValue: DateRangeValue) => {
-    setValue(newValue);
-  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -131,24 +195,8 @@ const QuickRangeDemo = () => {
           Click on the picker and select a quick range option to see how it works.
         </p>
       </div>
-      <DateRangePicker value={value} onChange={handleChange} />
-      {value && (
-        <div
-          style={{
-            padding: 12,
-            background: '#e6f7ff',
-            border: '1px solid #91d5ff',
-            borderRadius: 6,
-            fontSize: 13,
-          }}
-        >
-          <strong>Timestamp Output:</strong>
-          <br />
-          Start: {value.startDate} ({dayjs(value.startDate).format('YYYY-MM-DD HH:mm:ss')})
-          <br />
-          End: {value.endDate} ({dayjs(value.endDate).format('YYYY-MM-DD HH:mm:ss')})
-        </div>
-      )}
+      <DateRangePicker value={value} onChange={setValue} />
+      <ValueDisplay value={value} />
     </div>
   );
 };
@@ -160,21 +208,24 @@ export const QuickRangeSelectionDemo: Story = {
 // Controlled component example
 const ControlledTemplate = () => {
   const [value, setValue] = useState<DateRangeValue>({
-    startDate: dayjs().subtract(30, 'day').startOf('day').valueOf(),
-    endDate: dayjs().endOf('day').valueOf(),
+    timeFrom: dayjs().subtract(30, 'day').startOf('day').valueOf(),
+    timeTo: dayjs().endOf('day').valueOf(),
+    label: 'Last 30 Days',
   });
 
   const resetToLast7Days = () => {
     setValue({
-      startDate: dayjs().subtract(6, 'day').startOf('day').valueOf(),
-      endDate: dayjs().endOf('day').valueOf(),
+      timeFrom: dayjs().subtract(6, 'day').startOf('day').valueOf(),
+      timeTo: dayjs().endOf('day').valueOf(),
+      label: 'Last 7 Days',
     });
   };
 
   const resetToLastMonth = () => {
     setValue({
-      startDate: dayjs().subtract(29, 'day').startOf('day').valueOf(),
-      endDate: dayjs().endOf('day').valueOf(),
+      timeFrom: dayjs().subtract(29, 'day').startOf('day').valueOf(),
+      timeTo: dayjs().endOf('day').valueOf(),
+      label: 'Last 30 Days',
     });
   };
 
@@ -185,6 +236,7 @@ const ControlledTemplate = () => {
         <button onClick={resetToLast7Days}>Set to Last 7 Days</button>
         <button onClick={resetToLastMonth}>Set to Last 30 Days</button>
       </div>
+      <ValueDisplay value={value} />
     </div>
   );
 };
