@@ -12,6 +12,7 @@ export type ExpectedType =
   | 'PIPE_COMMAND'
   | 'LOGICAL_OPERATOR'
   | 'TIME_UNIT'
+  | 'TABLE'
   | 'ANY';
 
 /**
@@ -31,6 +32,7 @@ export interface CursorContext {
   expectedType: ExpectedType;
   isAfterPipe: boolean;
   isAfterOperator: boolean;
+  isAfterValue: boolean;
   previousToken: string;
   parentField?: string;
 }
@@ -62,6 +64,9 @@ export function analyzeContext(
   // Check if after operator
   const isAfterOperator = /[=!~><]\s*$/.test(textBeforeCursor) || /\s+IN\s*\(\s*$/.test(textBeforeCursor.toUpperCase());
 
+  // Check if after a completed value
+  const isAfterValue = checkIfAfterValue(textBeforeCursor);
+
   // Get previous token
   const previousToken = getPreviousToken(textBeforeCursor);
 
@@ -71,6 +76,7 @@ export function analyzeContext(
     currentClause,
     isAfterPipe,
     isAfterOperator,
+    isAfterValue,
     previousToken
   );
 
@@ -86,9 +92,44 @@ export function analyzeContext(
     expectedType,
     isAfterPipe,
     isAfterOperator,
+    isAfterValue,
     previousToken,
     parentField,
   };
+}
+
+/**
+ * Check if cursor is after a completed value
+ */
+function checkIfAfterValue(textBefore: string): boolean {
+  const trimmed = textBefore.trimEnd();
+
+  // After closing quote
+  if (trimmed.endsWith('"') || trimmed.endsWith("'")) {
+    return true;
+  }
+
+  // After closing parenthesis (for IN (...))
+  if (trimmed.endsWith(')')) {
+    // Check it's not a function call without value
+    if (/IN\s*\([^)]+\)$/i.test(trimmed)) {
+      return true;
+    }
+  }
+
+  // After a word/number that follows an operator
+  // Pattern: field operator value (where value is word, number, or quoted string)
+  const afterOpValue = /[=!~><]\s*(?:"[^"]*"|'[^']*'|-?\d+(?:\.\d+)?|\w+)\s*$/.test(trimmed);
+  if (afterOpValue) {
+    return true;
+  }
+
+  // After boolean values
+  if (/\b(?:TRUE|FALSE|NULL)\s*$/i.test(trimmed)) {
+    return true;
+  }
+
+  return false;
 }
 
 /**
@@ -117,7 +158,7 @@ function determineClause(textBefore: string): ClauseContext {
     lastHavingIndex,
     lastOrderIndex
   );
-  
+
   if (lastPipeIndex > maxClauseIndex) {
     return 'PIPE';
   }
@@ -168,6 +209,7 @@ function determineExpectedType(
   clause: ClauseContext,
   isAfterPipe: boolean,
   isAfterOperator: boolean,
+  isAfterValue: boolean,
   previousToken: string
 ): ExpectedType {
   const upperText = textBefore.toUpperCase().trimEnd();
@@ -176,6 +218,11 @@ function determineExpectedType(
   // After pipe symbol, expect pipe command
   if (isAfterPipe) {
     return 'PIPE_COMMAND';
+  }
+
+  // After a completed value, expect logical operators or clause keywords
+  if (isAfterValue) {
+    return 'LOGICAL_OPERATOR';
   }
 
   // After operator, expect value
@@ -197,9 +244,9 @@ function determineExpectedType(
     }
   }
 
-  // After FROM keyword, expect table/index name or field
+  // After FROM keyword, expect table/data source name
   if (upperText.endsWith('FROM') || upperText.endsWith('FROM ')) {
-    return 'FIELD';
+    return 'TABLE';
   }
 
   // After FROM with table, could suggest WHERE, JOIN
@@ -257,9 +304,9 @@ function determineExpectedType(
     return 'FIELD';
   }
 
-  // After ORDER BY with fields, could suggest LIMIT, OFFSET
+  // After ORDER BY with fields, could suggest ASC, DESC, LIMIT
   if (clause === 'ORDER' && !upperText.endsWith('ORDER') && !upperText.endsWith('BY')) {
-    return 'ANY'; // Could be LIMIT, OFFSET
+    return 'ANY'; // Could be ASC, DESC, LIMIT
   }
 
   // After comma in SELECT, expect field
@@ -285,11 +332,6 @@ function determineExpectedType(
   // After field name, expect operator
   if (clause === 'WHERE' && isLikelyField(previousToken)) {
     return 'OPERATOR';
-  }
-
-  // After comparison, expect logical operator or pipe
-  if (isAfterComparison(textBefore)) {
-    return 'LOGICAL_OPERATOR';
   }
 
   // After SELECT with space or comma, suggest fields
@@ -376,15 +418,6 @@ function isKeyword(token: string): boolean {
     'SORT', 'SIZE', 'AGGS', 'AGGREGATIONS',
   ];
   return keywords.includes(token.toUpperCase());
-}
-
-/**
- * Check if we're after a comparison expression
- */
-function isAfterComparison(textBefore: string): boolean {
-  // Look for pattern: field operator "value" or field operator value
-  const comparisonPattern = /[a-zA-Z_]\w*\s*(?:=|!=|~|!~|>=?|<=?)\s*(?:"[^"]*"|'[^']*'|\w+)\s*$/;
-  return comparisonPattern.test(textBefore);
 }
 
 /**

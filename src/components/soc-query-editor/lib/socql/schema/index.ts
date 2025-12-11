@@ -56,6 +56,16 @@ export {
   isReservedKeyword,
 } from './keywords';
 
+// Tables
+export {
+  TABLE_DEFINITIONS,
+  tableRegistry,
+  getTableByName,
+  getAllTableNames,
+  isValidTable,
+  type TableDefinition,
+} from './tables';
+
 // Schema Helpers (dynamic registration)
 export {
   // Field helpers
